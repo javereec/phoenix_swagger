@@ -22,10 +22,10 @@ defmodule PhoenixSwagger.Plug.SwaggerUI do
   alias Plug.Conn
 
   # Serve static assets before routing
-  plug Plug.Static, at: "/", from: :phoenix_swagger
+  plug(Plug.Static, at: "/", from: :phoenix_swagger)
 
-  plug :match
-  plug :dispatch
+  plug(:match)
+  plug(:dispatch)
 
   @template """
   <!-- HTML for static distribution bundle build -->
@@ -117,7 +117,8 @@ defmodule PhoenixSwagger.Plug.SwaggerUI do
       plugins: [
         SwaggerUIBundle.plugins.DownloadUrl
       ],
-      layout: "StandaloneLayout"
+      layout: "StandaloneLayout",
+      oauth2RedirectUrl: "<%= oauth2_redirect_url %>"
     })
 
     window.ui = ui
@@ -131,6 +132,7 @@ defmodule PhoenixSwagger.Plug.SwaggerUI do
   # Redirect / to /index.html
   get "/" do
     base_path = conn.request_path |> String.trim_trailing("/")
+
     conn
     |> Conn.put_resp_header("location", "#{base_path}/index.html")
     |> Conn.put_resp_content_type("text/html")
@@ -146,6 +148,7 @@ defmodule PhoenixSwagger.Plug.SwaggerUI do
   # Render the swagger.json file or 404 for any other file
   get "/*paths" do
     spec_url = conn.assigns.spec_url
+
     case conn.path_params["paths"] do
       [^spec_url] -> Conn.send_file(conn, 200, conn.assigns.swagger_file_path)
       _ -> Conn.send_resp(conn, 404, "not found")
@@ -168,7 +171,11 @@ defmodule PhoenixSwagger.Plug.SwaggerUI do
   def init(opts) do
     app = Keyword.fetch!(opts, :otp_app)
     swagger_file = Keyword.fetch!(opts, :swagger_file)
-    body = EEx.eval_string(@template, spec_url: swagger_file)
+    oauth_redirect_url = Keyword.fetch!(opts, :oauth_redirect_url)
+
+    body =
+      EEx.eval_string(@template, spec_url: swagger_file, oauth_redirect_url: oauth_redirect_url)
+
     swagger_file_path = Path.join(["priv", "static", swagger_file])
     [app: app, body: body, spec_url: swagger_file, swagger_file_path: swagger_file_path]
   end
