@@ -118,7 +118,7 @@ defmodule PhoenixSwagger.Plug.SwaggerUI do
         SwaggerUIBundle.plugins.DownloadUrl
       ],
       layout: "StandaloneLayout",
-      oauth2RedirectUrl: "<%= oauth2_redirect_url %>"
+      oauth2RedirectUrl: "<%= oauth_redirect_url %>"
     })
 
     window.ui = ui
@@ -174,7 +174,11 @@ defmodule PhoenixSwagger.Plug.SwaggerUI do
     oauth_redirect_url = Keyword.fetch!(opts, :oauth_redirect_url)
 
     body =
-      EEx.eval_string(@template, spec_url: swagger_file, oauth_redirect_url: oauth_redirect_url)
+      EEx.eval_string(
+        @template,
+        [spec_url: swagger_file, oauth_redirect_url: oauth_redirect_url],
+        []
+      )
 
     swagger_file_path = Path.join(["priv", "static", swagger_file])
     [app: app, body: body, spec_url: swagger_file, swagger_file_path: swagger_file_path]
